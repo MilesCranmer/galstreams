@@ -41,7 +41,7 @@ def get_random_spherical_coords(n,rad=[0.,1.],az=[0.,2*np.pi],lat=[-np.pi/2.,np.
 #---------------------------------
 #Footprint class definition
 class Footprint:
-    def __init__(self,lon,lat,name,Dist=None,vrad=None,pmlon=None,pmlat=None,cootype='gal',degree=True,is_pml_star=True,
+    def __init__(self,lon,lat,name,Dist=None,vrad=None,pmlon=None,pmlat=None,cootype=b'gal',degree=True,is_pml_star=True,
                  xyz_sun=[8.5,0.,0.],vel_sun=[10.3,232.6,5.9],vxyz_gal=(),Rhel=None):
         
         self.deg=degree 
@@ -57,11 +57,11 @@ class Footprint:
         self.xsun, self.vxsun = sign*self.xsun, sign*self.vxsun
         
         #Rhel is kept for backwards compatibility
-        if Rhel is not None and 'GC' in cootype: 
+        if Rhel is not None and b'GC' in cootype: 
           sys.exit('ERROR: Rhel not compatible with cootype=GC (distance provided should be galactocentric)')
         elif Rhel is not None: Dist,self.Rhel=Rhel,Rhel
 
-        if 'GC' in cootype:
+        if b'GC' in cootype:
           if Dist is not None: self.Rgal=Dist
           else: sys.exit('ERROR: Distance is mandatory to instantiate a Footprint in Galactocentric coords (cootype=GC)')
 
@@ -70,7 +70,7 @@ class Footprint:
           #Compute and set all heliocentric attributes
           self.compute_heliocentric_coords(degree=degree)
         else:
-          if 'gal' in cootype:
+          if b'gal' in cootype:
            self.l,self.b=lon,lat
            mm=bovyc.lb_to_radec(self.l,self.b,degree=self.deg)  
            if self.l.size>1: self.ra,self.dec=mm.T
@@ -84,7 +84,7 @@ class Footprint:
           if Dist is not None: self.Rhel=Dist
           if vrad is not None: self.vrad=vrad
             
-          if 'gal' in cootype:
+          if b'gal' in cootype:
             if pmlon is not None: 
                 if is_pml_star: self.pmlstar,self.pml=pmlon,pmlon/np.cos(_f*self.b)
                 else: self.pmlstar,self.pml=pmlon*np.cos(self._f*self.b),pmlon
@@ -121,7 +121,7 @@ class Footprint:
     def mask_footprint(self,mask):
         
         #Apply mask to all array attributes of object
-        for myattr in self.__dict__.keys():
+        for myattr in list(self.__dict__.keys()):
         #If attribute is callable, proceed (only applicable to ndim>=1 arrays)
           if not callable(getattr(self,myattr)) and np.ndim(getattr(self,myattr))>=1:
             setattr(self,myattr,getattr(self,myattr)[mask])
@@ -130,7 +130,7 @@ class Footprint:
     def compute_galactocentric_coords(self,verbose=False,degree=True):
       #Convert to heliocentric cartesian. Bovy's library assumes Sun's position is positive
       #tuple output, no .T needed
-      if verbose: print 'Converting Heliocentric Galactic Spherical to Heliocentric Cartesian coords...'
+      if verbose: print('Converting Heliocentric Galactic Spherical to Heliocentric Cartesian coords...')
       m=bovyc.lbd_to_XYZ(self.l,self.b,self.Rhel,degree=degree)
       self.xhel,self.yhel,self.zhel=m.T
       if hasattr(self,'vrad') and hasattr(self,'pmb') :
@@ -138,7 +138,7 @@ class Footprint:
         self.vxhel,self.vyhel,self.vzhel=m.T
 
       #Convert Heliocentric Cartesian to Galactocentric Cartesian
-      if verbose: print 'Converting Heliocentric Cartesian to Galactocentric Cartesian coords...'
+      if verbose: print('Converting Heliocentric Cartesian to Galactocentric Cartesian coords...')
       m=bovyc.XYZ_to_galcenrect(self.xhel,self.yhel,self.zhel,Xsun=self.xsun,Ysun=self.ysun,Zsun=self.zsun)
       self.x,self.y,self.z=m
       if hasattr(self,'vrad') and hasattr(self,'mub') :
@@ -196,7 +196,7 @@ class MWStreams(dict):
   
       for i in range(len(lono)):
         #Get great-circle lons,lats given end-points 
-        if verbose: print 'Reading pair-list for %s' % (name[i])        
+        if verbose: print('Reading pair-list for %s' % (name[i]))        
         azs,lats,azcenter,latcenter=gcutils.get_gc_for_pair(lono[i],lato[i],lonf[i],latf[i],degree=True,step=gcstep,dlat=width[i]) 
         
         #Do linear interpolation for the distance, not much better to do
@@ -221,18 +221,18 @@ class MWStreams(dict):
 
         for i in np.arange(len(pole_lons)):
            #Convert central coords to the same as pole coords for consistency
-           if verbose: print 'Reading pole-list for %s' % (name[i])        
+           if verbose: print('Reading pole-list for %s' % (name[i]))        
  
            #If center coords are given, make sure they're in the same system as pole coords
            if (clons[i]!=-999. and clats[i]!=-999.):     
              if  c_coot[i] in pole_coot[i]:
                 center=[clons[i],clats[i]]   #If in the same system, just save
-                if verbose: print ' same system, center:',center
+                if verbose: print(' same system, center:',center)
              else:
-               if 'gal' in c_coot[i]: clons[i],clats[i]=bovyc.lb_to_radec(clons[i],clats[i],degree=True) 
+               if b'gal' in c_coot[i]: clons[i],clats[i]=bovyc.lb_to_radec(clons[i],clats[i],degree=True) 
                else: clons[i],clats[i]=bovyc.radec_to_lb(clons[i],clats[i],degree=True)
                center=[clons[i],clats[i]]    
-               if verbose: print ' computed center',center                     
+               if verbose: print(' computed center',center)                     
            else: 
              center=None                          
                                   
@@ -276,7 +276,7 @@ class MWStreams(dict):
 
     for i in ind:
      #Parse corners
-     if verbose: print 'Reading lon-lat range for %s' % (name[i])        
+     if verbose: print('Reading lon-lat range for %s' % (name[i]))        
      azo,azf,lato,latf,ro,rf=azo_l[i],azf_l[i],lato_l[i],latf_l[i],ro_l[i],rf_l[i]
 
      #Random realization of coords    
@@ -292,7 +292,7 @@ class MWStreams(dict):
   #-----------------------by list of stars-------------------------------------------------------
   def init_by_star_list(self,verbose=False,Nint=300):
       
-     lib_path=os.path.join(os.path.dirname(os.path.realpath(__file__)),'lib')      
+     lib_path=str(os.path.join(os.path.dirname(os.path.realpath(__file__)),'lib'))
      lib_by_stars_list_filen=os.path.join(lib_path,'lib_by_star.log')
             
      list_dat=scipy.genfromtxt(lib_by_stars_list_filen,usecols=(1-1,2-1,3-1,4-1,5-1,6-1))
@@ -311,8 +311,8 @@ class MWStreams(dict):
      #Loop over library of star list files
      for i in range(list_dat[:,0].size):
        
-       if verbose: print 'Reading star list for %s' % (name[i])
-       azs,lats,Rhels,cntflg=scipy.genfromtxt(os.path.join(lib_path,fname[i]),usecols=(lon_col[i],lat_col[i],
+       if verbose: print('Reading star list for %s' % (name[i]))
+       azs,lats,Rhels,cntflg=scipy.genfromtxt(os.path.join(lib_path,fname[i].decode('utf-8')),usecols=(lon_col[i],lat_col[i],
                                               Rhel_col[i],cntflg_col[i]),unpack=True) 
        
        if interp_flg[i]==1 and azs.size>1:
@@ -334,7 +334,7 @@ class MWStreams(dict):
                         
        #If cntflg_col==1, force center to this coords (instead of the default vector mean)
        if cntflg_col[i]>=0:
-        if (cntflg==1).sum()>1: print 'Warning, more than one point flaged as center in %s, choosing first one.' % (fname[i]) 
+        if (cntflg==1).sum()>1: print('Warning, more than one point flaged as center in %s, choosing first one.' % (fname[i].decode('utf-8'))) 
         caz,clat=azs[cntflg==1][0],lats[cntflg==1][0]    
         auxfoot=Footprint(caz,clat,'dummy',degree=True,cootype=cootype[i]) 
         footprint.cra,footprint.cdec=auxfoot.cra,auxfoot.cdec
@@ -359,7 +359,7 @@ class MWStreams(dict):
           if not np.isnan(_phi[ii])  and not np.isnan(_theta[ii]): self[names[ii]].cphi,self[names[ii]].ctheta = _phi[ii], _theta[ii] 
          #Setting short names
          self[names[ii]].sname=shortnames[ii]        
-       except KeyError: print 'WARNING: Name %s used lib_centers.log not found in lib* definition files' % (names[ii])
+       except KeyError: print('WARNING: Name %s used lib_centers.log not found in lib* definition files' % (names[ii]))
 
   def __init__(self,verbose=True,gcstep=0.1,N=1000,Rstat='mean'):
         
@@ -383,7 +383,7 @@ class MWStreams(dict):
     self.init_by_star_list(verbose=verbose)
     
     #---Make sure galactocentric attributes are set to None if Rhel<0
-    for i in self.keys():
+    for i in list(self.keys()):
       #If there's no distance info at all, set to none
       if (self[i].Rhel<0.).all(): 
         self[i].Rgal,self[i].phi,self[i].theta,self[i].cphi,self[i].ctheta=None,None,None,None,None 
@@ -399,7 +399,7 @@ class MWStreams(dict):
   #-------------method to plot whole MW streams compilation object at once------------------------------------
   def plot_stream_compilation(self,ax,Rstat='mean',Rrange=[0.,9e9],plot_stream_type='all',plot_names=True,
                               use_shortnames=False,plot_colorbar=False,
-                              scat_kwargs=None,text_kwargs=None,sym_kwargs=None,cb_kwargs=None,cootype='gal',verbose=False,
+                              scat_kwargs=None,text_kwargs=None,sym_kwargs=None,cb_kwargs=None,cootype=b'gal',verbose=False,
                               exclude_streams=[],include_only=[]): 
 
    '''plot_stream_compilation(self,ax,Rstat='mean',Rrange=[0.,9e9],plot_stream_type='all',plot_names=True,
@@ -409,27 +409,27 @@ class MWStreams(dict):
 
 
    #Validate options for cootype
-   coo_types = ['gal', 'equ', 'GC']
+   coo_types = [b'gal', b'equ', b'GC']
    if cootype not in coo_types:
         raise ValueError("Invalid coo type. Expected one of: %s" % coo_types)
         
    #Validate options for Rstat
-   stat_types = ['min', 'max', 'mean', 'median']
+   stat_types = [b'min', b'max', b'mean', b'median']
    if Rstat not in stat_types:
         raise ValueError("Invalid stat type. Expected one of: %s" % stat_types)
    Rstat_func=getattr(np,Rstat)
 
    #Validate options for stream types to be plotted
-   stream_types = ['all', 'gc', 'dwarf']
+   stream_types = [b'all', b'gc', b'dwarf']
    if plot_stream_type not in stream_types:
         raise ValueError("Invalid stream type. Expected one of: %s" % stream_types)
 
    #Set a few plotting and labelling defaults  
    Rmax=0.
-   if 'GC' in cootype: 
-      for i in self.keys(): Rmax=np.max([Rmax,np.max(self[i].Rgal)]) 
+   if b'GC' in cootype: 
+      for i in list(self.keys()): Rmax=np.max([Rmax,np.max(self[i].Rgal)]) 
    else: 
-      for i in self.keys(): Rmax=np.max([Rmax,np.max(self[i].Rhel)]) 
+      for i in list(self.keys()): Rmax=np.max([Rmax,np.max(self[i].Rhel)]) 
    scatter_kwargs=dict(marker='o',s=8.,edgecolor='none',vmin=0.,vmax=Rmax,alpha=0.5)
    textlab_kwargs=dict(horizontalalignment='center',verticalalignment='bottom',zorder=99)
    textsym_kwargs=dict(marker='+',color='k',ms=5,zorder=textlab_kwargs['zorder'])
@@ -442,34 +442,34 @@ class MWStreams(dict):
    #but override whichever are user-supplied (doing it this way I ensure using my own defaults and not matplotlib's
    #if user supplies values for some (but not all) keywords
    if scat_kwargs is not None:
-        for key in scat_kwargs.keys(): scatter_kwargs[key]=scat_kwargs[key]
+        for key in list(scat_kwargs.keys()): scatter_kwargs[key]=scat_kwargs[key]
    if text_kwargs is not None:
-        for key in text_kwargs.keys(): textlab_kwargs[key]=text_kwargs[key]
+        for key in list(text_kwargs.keys()): textlab_kwargs[key]=text_kwargs[key]
    if sym_kwargs is not None:
-        for key in sym_kwargs.keys(): textsym_kwargs[key]=sym_kwargs[key]
+        for key in list(sym_kwargs.keys()): textsym_kwargs[key]=sym_kwargs[key]
    if cb_kwargs is not None:
-        for key in cb_kwargs.keys(): colorbar_kwargs[key]=cb_kwargs[key]       
+        for key in list(cb_kwargs.keys()): colorbar_kwargs[key]=cb_kwargs[key]       
 
    #If Rrange is supplied, use it to set vmax 
    if Rrange[1]<9e9: scatter_kwargs['vmax']=Rrange[1]
 
    #------------------------------PLOT---------------------------------------------------------------------- 
-   keys_to_plot=self.keys()
+   keys_to_plot=list(self.keys())
    if include_only: keys_to_plot=include_only
 
    for i in keys_to_plot:
 
     #Skip it stream name in list of excluded streams    
     if i in exclude_streams:
-        print 'Skipping excluded stream: %s' % (self[i].name)
+        print('Skipping excluded stream: %s' % (self[i].name))
         continue
 
     #Skip it if coo-mode selected is galactocentric and stream has no valid galactocentric attributes  
-    if 'GC' in cootype and self[i].phi is None:
-        print 'Skipping stream %s, no valid Rhel => no valid galactocentric attributes' % (self[i].name)
+    if b'GC' in cootype and self[i].phi is None:
+        print('Skipping stream %s, no valid Rhel => no valid galactocentric attributes' % (self[i].name))
         continue
        
-    if 'GC' in cootype:
+    if b'GC' in cootype:
       notnan=self[i].Rgal>=0. #this works to avoid nans as well
       ro,rf,Rs=np.min(self[i].Rgal[notnan]),np.max(self[i].Rgal[notnan]),self[i].Rgal    
     else:
@@ -478,19 +478,19 @@ class MWStreams(dict):
         ro,rf,Rs=np.min(self[i].Rhel[notneg]),np.max(self[i].Rhel[notneg]),self[i].Rhel    
       else: ro,rf,Rs=-1,-1,self[i].Rhel
 
-    if 'gal' in cootype: lons,latts,loncenter,latcenter=self[i].l,self[i].b,self[i].cl,self[i].cb
-    elif 'equ' in cootype: lons,latts,loncenter,latcenter=self[i].ra,self[i].dec,self[i].cra,self[i].cdec      
+    if b'gal' in cootype: lons,latts,loncenter,latcenter=self[i].l,self[i].b,self[i].cl,self[i].cb
+    elif b'equ' in cootype: lons,latts,loncenter,latcenter=self[i].ra,self[i].dec,self[i].cra,self[i].cdec      
     else: lons,latts,loncenter,latcenter=self[i].phi,self[i].theta,self[i].cphi,self[i].ctheta 
     
 
     #Skip if stream does not have any part overlapping Rrange
     if (ro>0) and not (ro<=Rrange[1] and rf>=Rrange[0]):
       if verbose: 
-        print 'Skipping %s [%.1f,%.1f], outside selected Rrange [%.1f,%.1f]' % (self[i].name,ro,rf,Rrange[0],Rrange[1])
+        print('Skipping %s [%.1f,%.1f], outside selected Rrange [%.1f,%.1f]' % (self[i].name,ro,rf,Rrange[0],Rrange[1]))
       continue
     else:
       if verbose and ro is not None:
-        print 'Plotting %s [%.1f,%.1f], INside selected Rrange [%.1f,%.1f]' % (self[i].name,ro,rf,Rrange[0],Rrange[1])
+        print('Plotting %s [%.1f,%.1f], INside selected Rrange [%.1f,%.1f]' % (self[i].name,ro,rf,Rrange[0],Rrange[1]))
    
     cc=ax.scatter(lons,latts,c=Rs,**scatter_kwargs)
     if plot_names:
@@ -519,7 +519,7 @@ def plot_globular_clusters(ax,plot_colorbar=False,scat_kwargs=None,galactic=True
  #but override whichever are user-supplied (doing it this way I ensure using my own defaults and not matplotlib's
  #if user supplies values for some (but not all) keywords
  if scat_kwargs is not None: 
-    for key in scat_kwargs.keys(): scatter_kwargs[key]=scat_kwargs[key]  
+    for key in list(scat_kwargs.keys()): scatter_kwargs[key]=scat_kwargs[key]  
 
  #Plot globular cluster layer       
  if galactic: cc=ax.scatter(gc_l,gc_b,c=gc_Rhel,**scatter_kwargs)           
